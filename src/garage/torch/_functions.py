@@ -92,13 +92,13 @@ def discount_cumsum(x, discount):
                             discount,
                             dtype=torch.float,
                             device=x.device)
+    discount_x[0] = 1.0
     filter = torch.cumprod(discount_x, dim=0)
-    returns = F.conv1d(x, filter, stride=1)
-    assert returns.shape == (len(x), )
-    from garage.np import discount_cumsum as np_discout_cumsum
-    import numpy as np
-    expected = np_discout_cumsum(torch_to_np(x), discount)
-    assert np.array_equal(expected, torch_to_np(returns))
+    pad = len(x) - 1
+    # minibatch of 1, with 1 channel
+    filter = filter.reshape(1, 1, -1)
+    returns = F.conv1d(x.reshape(1, 1, -1), filter, stride=1, padding=pad)
+    returns = returns[0, 0, pad:]
     return returns
 
 
@@ -370,6 +370,19 @@ def product_of_gaussians(mus, sigmas_squared):
     sigma_squared = 1. / torch.sum(torch.reciprocal(sigmas_squared), dim=0)
     mu = sigma_squared * torch.sum(mus / sigmas_squared, dim=0)
     return mu, sigma_squared
+
+
+def as_tensor(data):
+    """Convert a list to a PyTorch tensor
+
+    Args:
+        data (list): Data to convert to tensor
+
+    Returns:
+        torch.Tensor: A float tensor
+
+    """
+    return torch.as_tensor(data, dtype=torch.float32, device=global_device())
 
 
 # pylint: disable=W0223

@@ -3,7 +3,7 @@ import torch
 
 from garage.torch.algos import VPG
 from garage.torch.optimizers import (ConjugateGradientOptimizer,
-                                     OptimizerWrapper)
+                                     MinibatchOptimizer)
 
 
 class TRPO(VPG):
@@ -15,9 +15,9 @@ class TRPO(VPG):
         value_function (garage.torch.value_functions.ValueFunction): The value
             function.
         sampler (garage.sampler.Sampler): Sampler.
-        policy_optimizer (garage.torch.optimizer.OptimizerWrapper): Optimizer
+        policy_optimizer (garage.torch.optimizer.MinibatchOptimizer): Optimizer
             for policy.
-        vf_optimizer (garage.torch.optimizer.OptimizerWrapper): Optimizer for
+        vf_optimizer (garage.torch.optimizer.MinibatchOptimizer): Optimizer for
             value function.
         num_train_per_epoch (int): Number of train_once calls per epoch.
         discount (float): Discount.
@@ -61,11 +61,11 @@ class TRPO(VPG):
                  entropy_method='no_entropy'):
 
         if policy_optimizer is None:
-            policy_optimizer = OptimizerWrapper(
+            policy_optimizer = MinibatchOptimizer(
                 (ConjugateGradientOptimizer, dict(max_constraint_value=0.01)),
                 policy)
         if vf_optimizer is None:
-            vf_optimizer = OptimizerWrapper(
+            vf_optimizer = MinibatchOptimizer(
                 (torch.optim.Adam, dict(lr=2.5e-4)),
                 value_function,
                 max_optimization_epochs=10,
@@ -116,7 +116,8 @@ class TRPO(VPG):
 
         return surrogate
 
-    def _train_policy(self, obs, actions, rewards, advantages):
+    def _train_policy(self, observations, actions, rewards, advantages,
+                      lengths):
         r"""Train the policy.
 
         Args:
@@ -128,17 +129,19 @@ class TRPO(VPG):
                 with shape :math:`(N, )`.
             advantages (torch.Tensor): Advantage value at each step
                 with shape :math:`(N, )`.
+            lengths (torch.Tensor): Lengths of episodes.
 
         Returns:
             torch.Tensor: Calculated mean scalar value of policy loss (float).
 
         """
-        self._policy_optimizer.zero_grad()
-        loss = self._compute_loss_with_adv(obs, actions, rewards, advantages)
-        loss.backward()
-        self._policy_optimizer.step(
-            f_loss=lambda: self._compute_loss_with_adv(obs, actions, rewards,
-                                                       advantages),
-            f_constraint=lambda: self._compute_kl_constraint(obs))
-
-        return loss
+        data = {
+            'observations': observations,
+            'actions': actions,
+            'rewards': rewards,
+            'advantages': advantages,
+            'lengths': lengths
+        }
+        f_constraint = lambda: self._compute_kl_constraint(observations)
+        return self._policy_optimizer.step(data, self._loss_function,
+                                           f_constraint)

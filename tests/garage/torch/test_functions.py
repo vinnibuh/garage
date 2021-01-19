@@ -5,15 +5,11 @@ import pytest
 import torch
 import torch.nn.functional as F
 
-from garage.torch import (compute_advantages,
-                          dict_np_to_torch,
-                          flatten_to_single_vector,
-                          global_device,
-                          pad_to_last,
-                          product_of_gaussians,
-                          set_gpu_mode,
-                          torch_to_np,
-                          TransposeImage)
+from garage.np import discount_cumsum as np_discout_cumsum
+from garage.torch import (compute_advantages, dict_np_to_torch,
+                          discount_cumsum, flatten_to_single_vector,
+                          global_device, pad_to_last, product_of_gaussians,
+                          set_gpu_mode, torch_to_np, TransposeImage)
 import garage.torch._functions as tu
 
 from tests.fixtures import TfGraphTestCase
@@ -95,6 +91,15 @@ def test_transpose_image():
         transposed_env = TransposeImage(original_env)
         assert (original_env.observation_space.shape[2] ==
                 transposed_env.observation_space.shape[0])
+
+def test_discount_cumsum():
+    discount = 0.99
+    x = tensor([9.3217, 9.3003, 9.3406, 9.2251, 9.0715, 9.0134, 8.9026,
+                8.6619])
+    returns = discount_cumsum(x, discount)
+    expected = np_discout_cumsum(torch_to_np(x), discount)
+    assert returns.shape == (len(x), )
+    assert np.allclose(expected, torch_to_np(returns)
 
 
 class TestTorchAlgoUtils(TfGraphTestCase):
