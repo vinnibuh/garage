@@ -43,8 +43,7 @@ EXTRAS['tensorflow'] = [
 ]
 
 EXTRAS['gym'] = [
-    f'gym[atari,box2d,classic_control]=={GYM_VERSION}',
-    'atari-py<0.2.7',
+    f'gym[classic_control]=={GYM_VERSION}',
 ]
 
 EXTRAS['mujoco'] = [
