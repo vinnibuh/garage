@@ -435,7 +435,7 @@ class Wrapper(Environment):
         """
         return self._env.reset()
 
-    def render(self, mode):
+    def render(self, mode, **kwargs):
         """Render the wrapped environment.
 
         Args:
@@ -446,7 +446,7 @@ class Wrapper(Environment):
             object: the return value for render, depending on each env.
 
         """
-        return self._env.render(mode)
+        return self._env.render(mode, **kwargs)
 
     def visualize(self):
         """Creates a visualization of the wrapped environment."""

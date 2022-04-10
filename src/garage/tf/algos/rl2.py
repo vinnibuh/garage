@@ -85,7 +85,7 @@ class RL2Env(Wrapper):
         es = self._env.step(action)
         next_obs = es.observation
         next_obs = np.concatenate([
-            next_obs, action, [es.reward], [es.step_type == StepType.TERMINAL]
+            next_obs, action, [es.reward], [es.step_type == StepType.TIMEOUT]
         ])
 
         return EnvStep(env_spec=self.spec,
@@ -496,7 +496,7 @@ class RL2(MetaRLAlgorithm, abc.ABC):
             env_spec=episode_list[0].env_spec,
             episode_infos=episode_infos,
             observations=np.concatenate(
-                [ep.observations for ep in episode_list]),
+                [ep.observations for ep in episode_list]).astype(np.float32),
             last_observations=episode_list[-1].last_observations,
             actions=actions,
             rewards=np.concatenate([ep.rewards for ep in episode_list]),

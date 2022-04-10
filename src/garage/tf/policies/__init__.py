@@ -4,6 +4,7 @@ from garage.tf.policies.categorical_gru_policy import CategoricalGRUPolicy
 from garage.tf.policies.categorical_lstm_policy import CategoricalLSTMPolicy
 from garage.tf.policies.categorical_mlp_policy import CategoricalMLPPolicy
 from garage.tf.policies.continuous_mlp_policy import ContinuousMLPPolicy
+from garage.tf.policies.visual_rl2_policy import VisualRL2Policy
 from garage.tf.policies.discrete_qf_argmax_policy import DiscreteQFArgmaxPolicy
 from garage.tf.policies.gaussian_gru_policy import GaussianGRUPolicy
 from garage.tf.policies.gaussian_lstm_policy import GaussianLSTMPolicy
@@ -16,6 +17,7 @@ from garage.tf.policies.task_embedding_policy import TaskEmbeddingPolicy
 __all__ = [
     'Policy', 'CategoricalCNNPolicy', 'CategoricalGRUPolicy',
     'CategoricalLSTMPolicy', 'CategoricalMLPPolicy', 'ContinuousMLPPolicy',
+    'VisualRL2Policy',
     'DiscreteQFArgmaxPolicy', 'GaussianGRUPolicy', 'GaussianLSTMPolicy',
     'GaussianMLPPolicy', 'GaussianMLPTaskEmbeddingPolicy',
     'TaskEmbeddingPolicy'

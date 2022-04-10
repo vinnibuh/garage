@@ -7,7 +7,7 @@ from dowel import logger, tabular
 import numpy as np
 import tensorflow as tf
 
-from garage import log_performance, make_optimizer
+from garage import StepType, log_performance, make_optimizer
 from garage.np import explained_variance_1d, pad_batch_array
 from garage.np.algos import RLAlgorithm
 from garage.tf import (center_advs, compile_function, compute_advantages,
@@ -263,13 +263,17 @@ class NPO(RLAlgorithm):
         action_space = self.policy.action_space
 
         with tf.name_scope('inputs'):
-            obs_var = observation_space.to_tf_placeholder(name='obs',
-                                                          batch_dims=2)
+            obs_var = tf.compat.v1.placeholder(tf.float32,
+                                               shape=[None, None, *observation_space.shape],
+                                               name='obs')
             action_var = action_space.to_tf_placeholder(name='action',
                                                         batch_dims=2)
             reward_var = tf.compat.v1.placeholder(tf.float32,
                                                   shape=[None, None],
                                                   name='reward')
+            term_sign_var = tf.compat.v1.placeholder(tf.float32,
+                                                 shape=[None, None],
+                                                 name='term_sign')
             valid_var = tf.compat.v1.placeholder(tf.float32,
                                                  shape=[None, None],
                                                  name='valid')
@@ -295,14 +299,21 @@ class NPO(RLAlgorithm):
                                           -1)
 
         self._policy_network = self.policy.build(augmented_obs_var,
+                                                 action_var,
+                                                 reward_var,
+                                                 term_sign_var,
                                                  name='policy')
         self._old_policy_network = self._old_policy.build(augmented_obs_var,
+                                                          action_var,
+                                                          reward_var,
+                                                          term_sign_var,
                                                           name='policy')
 
         policy_loss_inputs = graph_inputs(
             'PolicyLossInputs',
             action_var=action_var,
             reward_var=reward_var,
+            term_sign_var=term_sign_var,
             baseline_var=baseline_var,
             valid_var=valid_var,
             policy_state_info_vars=policy_state_info_vars,
@@ -311,6 +322,7 @@ class NPO(RLAlgorithm):
             'PolicyOptInputs',
             obs_var=obs_var,
             action_var=action_var,
+            term_sign_var=term_sign_var,
             reward_var=reward_var,
             baseline_var=baseline_var,
             valid_var=valid_var,
@@ -504,11 +516,15 @@ class NPO(RLAlgorithm):
                                          episodes.lengths,
                                          self.max_episode_length)
 
+        term_signs = np.array(episodes.padded_step_types == StepType.TIMEOUT).astype(np.float32)
+        obs_var = episodes.padded_observations / 255 - 0.5
+
         # pylint: disable=unexpected-keyword-arg
         policy_opt_input_values = self._policy_opt_inputs._replace(
-            obs_var=episodes.padded_observations,
+            obs_var=obs_var,
             action_var=padded_actions,
             reward_var=episodes.padded_rewards,
+            term_sign_var=term_signs,
             baseline_var=baselines,
             valid_var=episodes.valids,
             policy_state_info_vars_list=policy_state_info_list,

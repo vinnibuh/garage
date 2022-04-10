@@ -269,7 +269,7 @@ class GymEnv(Environment):
                        env_info=info,
                        step_type=step_type)
 
-    def render(self, mode):
+    def render(self, mode, **kwargs):
         """Renders the environment.
 
         Args:
@@ -281,7 +281,7 @@ class GymEnv(Environment):
 
         """
         self._validate_render_mode(mode)
-        return self._env.render(mode)
+        return self._env.render(mode, **kwargs)
 
     def visualize(self):
         """Creates a visualization of the environment."""

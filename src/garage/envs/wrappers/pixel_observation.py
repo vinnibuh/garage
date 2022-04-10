@@ -26,7 +26,7 @@ class PixelObservationWrapper(gym.Wrapper):
 
     """
 
-    def __init__(self, env, headless=True):
+    def __init__(self, env, headless=True, render_kwargs=None):
         if headless:
             # pylint: disable=import-outside-toplevel
             # this import fails without a valid mujoco license
@@ -36,7 +36,7 @@ class PixelObservationWrapper(gym.Wrapper):
             from mujoco_py import GlfwContext
             GlfwContext(offscreen=True)
         env.reset()
-        env = gymWrapper(env)
+        env = gymWrapper(env, render_kwargs=render_kwargs)
         super().__init__(env)
         self._observation_space = env.observation_space['pixels']
 
