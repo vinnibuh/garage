@@ -5,6 +5,7 @@ import time
 
 import cloudpickle
 from dowel import logger, tabular
+import wandb
 
 # This is avoiding a circular import
 from garage.experiment.deterministic import get_seed, set_seed
@@ -344,6 +345,7 @@ class Trainer:
         logger.log('Time %.2f s' % (time.time() - self._start_time))
         logger.log('EpochTime %.2f s' % (time.time() - self._itr_start_time))
         tabular.record('TotalEnvSteps', self._stats.total_env_steps)
+        wandb.log({'TotalEnvSteps': self._stats.total_env_steps})
         logger.log(tabular)
 
         if self._plot:

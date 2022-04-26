@@ -1,6 +1,7 @@
 """Natural Policy Gradient Optimization."""
 from dowel import logger, tabular
 import numpy as np
+import wandb
 
 from garage.np import explained_variance_1d, pad_batch_array
 from garage.tf.algos import NPO
@@ -97,6 +98,15 @@ class RL2NPO(NPO):
 
         ev = explained_variance_1d(baselines, returns, episodes.valids)
         tabular.record('{}/ExplainedVariance'.format(self._baseline.name), ev)
+        metrics = {
+            '{}/LossBefore'.format(self.policy.name): loss_before,
+            '{}/LossAfter'.format(self.policy.name): loss_after,
+            '{}/dLoss'.format(self.policy.name): loss_before - loss_after,
+            '{}/KLBefore'.format(self.policy.name): policy_kl_before,
+            '{}/KL'.format(self.policy.name): policy_kl,
+            '{}/ExplainedVariance'.format(self._baseline.name): ev
+        }
+        wandb.log(metrics)
         self._old_policy.parameters = self.policy.parameters
 
     def _get_baseline_prediction(self, episodes):

@@ -6,6 +6,7 @@ import collections
 from dowel import logger, tabular
 import numpy as np
 import tensorflow as tf
+import wandb
 
 from garage import log_performance, make_optimizer
 from garage.np import explained_variance_1d, pad_batch_array
@@ -207,6 +208,7 @@ class NPO(RLAlgorithm):
         self._episode_reward_mean.extend(undiscounted_returns)
         tabular.record('Extras/EpisodeRewardMean',
                        np.mean(self._episode_reward_mean))
+        wandb.log('Extras/EpisodeRewardMean', np.mean(self._episode_reward_mean))
 
         logger.log('Optimizing policy...')
         self._optimize_policy(episodes, baselines)
@@ -249,6 +251,17 @@ class NPO(RLAlgorithm):
         ev = explained_variance_1d(baselines, returns, episodes.valids)
 
         tabular.record('{}/ExplainedVariance'.format(self._baseline.name), ev)
+        metrics = {
+            '{}/LossBefore'.format(self.policy.name): loss_before,
+            '{}/LossAfter'.format(self.policy.name): loss_after,
+            '{}/dLoss'.format(self.policy.name): loss_before - loss_after,
+            '{}/KLBefore'.format(self.policy.name): policy_kl_before,
+            '{}/KL'.format(self.policy.name): policy_kl,
+            '{}/Entropy'.format(self.policy.name): ent,
+            '{}/Perplexity'.format(self.policy.name): np.exp(ent),
+            '{}/ExplainedVariance'.format(self._baseline.name): ev
+        }
+        wandb.log(metrics)
         self._old_policy.parameters = self.policy.parameters
 
     def _build_inputs(self):

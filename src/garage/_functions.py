@@ -5,6 +5,7 @@ import time
 import click
 from dowel import tabular
 import numpy as np
+import wandb
 
 from garage import EpisodeBatch, StepType
 from garage.np import discount_cumsum, stack_tensor_dict_list
@@ -174,7 +175,7 @@ def obtain_evaluation_episodes(policy,
     return EpisodeBatch.from_list(env.spec, episodes)
 
 
-def log_multitask_performance(itr, batch, discount, name_map=None):
+def log_multitask_performance(itr, batch, discount, name_map=None, wnb_prefix=''):
     r"""Log performance of episodes from multiple tasks.
 
     Args:
@@ -208,6 +209,8 @@ def log_multitask_performance(itr, batch, discount, name_map=None):
         task_names = eps_by_name.keys()
     else:
         task_names = name_map.values()
+    if wnb_prefix and wnb_prefix[-1] != '/':
+        wnb_prefix = wnb_prefix + '/'
     for task_name in task_names:
         if task_name in eps_by_name:
             episodes = eps_by_name[task_name]
@@ -226,11 +229,26 @@ def log_multitask_performance(itr, batch, discount, name_map=None):
                 tabular.record('MinReturn', np.nan)
                 tabular.record('TerminationRate', np.nan)
                 tabular.record('SuccessRate', np.nan)
+            
+            metrics = {
+                'Iteration': itr,
+                'NumEpisodes': 0,
+                'AverageDiscountedReturn': np.nan,
+                'AverageReturn': np.nan,
+                'StdReturn': np.nan,
+                'MaxReturn': np.nan,
+                'MinReturn': np.nan,
+                'TerminationRate': np.nan,
+                'SuccessRate': np.nan
+            }
+            task_wnb_prefix = wnb_prefix + task_name
+            res = {task_wnb_prefix + '/' + str(key): val for key, val in metrics.items()}
+            wandb.log(res)
 
-    return log_performance(itr, batch, discount=discount, prefix='Average')
+    return log_performance(itr, batch, discount=discount, prefix='Average', wnb_prefix=wnb_prefix+'Average')
 
 
-def log_performance(itr, batch, discount, prefix='Evaluation'):
+def log_performance(itr, batch, discount, prefix='Evaluation', wnb_prefix=None):
     """Evaluate the performance of an algorithm on a batch of episodes.
 
     Args:
@@ -272,4 +290,20 @@ def log_performance(itr, batch, discount, prefix='Evaluation'):
         if success:
             tabular.record('SuccessRate', np.mean(success))
 
+    metrics = {
+        'Iteration': itr,
+        'NumEpisodes': len(returns),
+        'AverageDiscountedReturn': average_discounted_return,
+        'AverageReturn': np.mean(undiscounted_returns),
+        'StdReturn': np.std(undiscounted_returns),
+        'MaxReturn': np.max(undiscounted_returns),
+        'MinReturn': np.min(undiscounted_returns),
+        'TerminationRate': np.mean(termination),
+    }
+    if success:
+        metrics['SuccessRate'] = np.mean(success)
+    if not wnb_prefix:
+        wnb_prefix = prefix
+    res = {wnb_prefix + '/' + str(key): val for key, val in metrics.items()}
+    wandb.log(res)
     return undiscounted_returns

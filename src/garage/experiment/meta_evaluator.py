@@ -108,10 +108,12 @@ class MetaEvaluator:
         else:
             name_map = None
 
+        wnb_prefix = self._prefix + '/' if self._prefix else ''
         with tabular.prefix(self._prefix + '/' if self._prefix else ''):
             log_multitask_performance(
                 self._eval_itr,
                 EpisodeBatch.concatenate(*adapted_episodes),
                 getattr(algo, 'discount', 1.0),
-                name_map=name_map)
+                name_map=name_map,
+                wnb_prefix=wnb_prefix)
         self._eval_itr += 1
