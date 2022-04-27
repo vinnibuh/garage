@@ -345,7 +345,9 @@ class Trainer:
         logger.log('Time %.2f s' % (time.time() - self._start_time))
         logger.log('EpochTime %.2f s' % (time.time() - self._itr_start_time))
         tabular.record('TotalEnvSteps', self._stats.total_env_steps)
-        wandb.log({'TotalEnvSteps': self._stats.total_env_steps})
+        wandb.log({
+            'TotalEnvSteps': self._stats.total_env_steps,
+            'train_env_step': self._stats.total_env_steps})
         logger.log(tabular)
 
         if self._plot:
