@@ -85,7 +85,7 @@ class RL2Env(Wrapper):
         es = self._env.step(action)
         next_obs = es.observation
         next_obs = np.concatenate([
-            next_obs, action, [es.reward], [es.step_type == StepType.TERMINAL]
+            next_obs, action, [es.reward], [es.step_type == StepType.TIMEOUT]
         ])
 
         return EnvStep(env_spec=self.spec,

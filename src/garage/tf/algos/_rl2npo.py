@@ -106,7 +106,7 @@ class RL2NPO(NPO):
             '{}/KL'.format(self.policy.name): policy_kl,
             '{}/ExplainedVariance'.format(self._baseline.name): ev
         }
-        wandb.log(metrics)
+        wandb.log(metrics, commit=False)
         self._old_policy.parameters = self.policy.parameters
 
     def _get_baseline_prediction(self, episodes):

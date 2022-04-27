@@ -208,7 +208,7 @@ class NPO(RLAlgorithm):
         self._episode_reward_mean.extend(undiscounted_returns)
         tabular.record('Extras/EpisodeRewardMean',
                        np.mean(self._episode_reward_mean))
-        wandb.log('Extras/EpisodeRewardMean', np.mean(self._episode_reward_mean))
+        wandb.log('Extras/EpisodeRewardMean', np.mean(self._episode_reward_mean), commit=False)
 
         logger.log('Optimizing policy...')
         self._optimize_policy(episodes, baselines)
@@ -261,7 +261,7 @@ class NPO(RLAlgorithm):
             '{}/Perplexity'.format(self.policy.name): np.exp(ent),
             '{}/ExplainedVariance'.format(self._baseline.name): ev
         }
-        wandb.log(metrics)
+        wandb.log(metrics, commit=False)
         self._old_policy.parameters = self.policy.parameters
 
     def _build_inputs(self):

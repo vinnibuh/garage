@@ -243,7 +243,7 @@ def log_multitask_performance(itr, batch, discount, name_map=None, wnb_prefix=''
             }
             task_wnb_prefix = wnb_prefix + task_name
             res = {task_wnb_prefix + '/' + str(key): val for key, val in metrics.items()}
-            wandb.log(res)
+            wandb.log(res, commit=False)
 
     return log_performance(itr, batch, discount=discount, prefix='Average', wnb_prefix=wnb_prefix+'Average')
 
@@ -305,5 +305,5 @@ def log_performance(itr, batch, discount, prefix='Evaluation', wnb_prefix=None):
     if not wnb_prefix:
         wnb_prefix = prefix
     res = {wnb_prefix + '/' + str(key): val for key, val in metrics.items()}
-    wandb.log(res)
+    wandb.log(res, commit=False)
     return undiscounted_returns
