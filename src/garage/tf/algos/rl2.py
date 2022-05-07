@@ -9,6 +9,7 @@ import collections
 import akro
 from dowel import logger
 import numpy as np
+import wandb
 
 from garage import (EnvSpec, EnvStep, EpisodeBatch, log_multitask_performance,
                     StepType, Wrapper)
@@ -306,7 +307,7 @@ class RL2(MetaRLAlgorithm, abc.ABC):
     """
 
     def __init__(self, env_spec, episodes_per_trial, meta_batch_size,
-                 task_sampler, meta_evaluator, n_epochs_per_eval,
+                 task_sampler, train_meta_evaluator, test_meta_evaluator, n_epochs_per_eval,
                  **inner_algo_args):
         self._env_spec = env_spec
         _inner_env_spec = EnvSpec(
@@ -319,7 +320,8 @@ class RL2(MetaRLAlgorithm, abc.ABC):
         self._discount = self._inner_algo._discount
         self._meta_batch_size = meta_batch_size
         self._task_sampler = task_sampler
-        self._meta_evaluator = meta_evaluator
+        self._train_meta_evaluator = train_meta_evaluator
+        self._test_meta_evaluator = test_meta_evaluator
         self._sampler = self._inner_algo._sampler
 
     def train(self, trainer):
@@ -334,17 +336,26 @@ class RL2(MetaRLAlgorithm, abc.ABC):
 
         """
         last_return = None
-
+        if self._train_meta_evaluator is not None:
+            self._train_meta_evaluator.evaluate(self)
+        if self._test_meta_evaluator is not None:
+            self._test_meta_evaluator.evaluate(self)
+        wandb.log({
+            'TotalEnvSteps': 0,
+            'train_env_step': 0})
         for _ in trainer.step_epochs():
-            if trainer.step_itr % self._n_epochs_per_eval == 0:
-                if self._meta_evaluator is not None:
-                    self._meta_evaluator.evaluate(self)
             trainer.step_episode = trainer.obtain_episodes(
                 trainer.step_itr,
                 env_update=self._task_sampler.sample(self._meta_batch_size))
             last_return = self.train_once(trainer.step_itr,
                                           trainer.step_episode)
+            if trainer.step_itr % self._n_epochs_per_eval == 0:
+                if self._train_meta_evaluator is not None:
+                    self._train_meta_evaluator.evaluate(self)
+                if self._test_meta_evaluator is not None:
+                    self._test_meta_evaluator.evaluate(self)
             trainer.step_itr += 1
+            wandb.log()
 
         return last_return
 

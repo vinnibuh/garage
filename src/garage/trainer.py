@@ -347,7 +347,7 @@ class Trainer:
         tabular.record('TotalEnvSteps', self._stats.total_env_steps)
         wandb.log({
             'TotalEnvSteps': self._stats.total_env_steps,
-            'train_env_step': self._stats.total_env_steps})
+            'train_env_step': self._stats.total_env_steps}, commit=False)
         logger.log(tabular)
 
         if self._plot:
